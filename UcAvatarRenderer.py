@@ -1,5 +1,6 @@
 import sys
 import psycopg2
+import renderer
 from config import *
 
 def see_help():
