@@ -1,8 +1,11 @@
-import sys
-import psycopg2
-import renderer
-from config import *
+#import sys
+import http_server
+#import renderer
+#from config import *
 
+__author__ = 'Yegor Yershov'
+
+'''
 def see_help():
 	string = \
 	f'Usage: \n\t{sys.argv[0]} [OPTIONS]\n\n' + \
@@ -18,11 +21,8 @@ if "--help" in args or "-h" in args:
 	see_help()
 	exit()
 
-conn = psycopg2.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST)
-cursor = conn.cursor()
-
-arguments = {'-u':'user_id', '--user':'user_id', '-f':'file_name', '--file_name':'file_name'}
-conf = {}
+#arguments = {'-u':'user_id', '--user':'user_id', '-f':'file_name', '--file_name':'file_name'}
+#conf = {}
 
 for i in range(len(args)):
 	if args[i][0] == '-':
@@ -38,8 +38,13 @@ if 'file_name' not in conf:
 
 cursor.execute('SELECT * FROM users WHERE user_id = {}'.format(conf['user_id']))
 user = cursor.fetchone()
+user_avatar_url = user[6] # avatar_url column
+user_nickname = user[2]
 
 print(user)
 
 cursor.close()
 conn.close()
+'''
+
+http_server.run(handler_class=http_server.HttpGetHandler)
