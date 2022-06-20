@@ -47,20 +47,20 @@ class HttpGetHandler(BaseHTTPRequestHandler):
 		if not self.database_loaded:
 			self.load_database()
 
-		#try:
-		image = self.parse_parameters()
-		self.send_response(200)
-		self.send_header("Content-type", "image/jpg")
-		self.end_headers()
-		self.wfile.write(image)
-		#except Exception as e:
-		#	self.send_response(404)
-		#	self.send_header("Content-type", "text/html")
-		#	self.end_headers()
-		#	self.wfile.write('<title>Wrong arguments</title>'.encode())
-		#	self.wfile.write('<body>'.encode())
-		#	self.wfile.write('Something got wrong, check arguments'.encode())
-		#	self.wfile.write(f'{e}</body>'.encode())
+		try:
+			image = self.parse_parameters()
+			self.send_response(200)
+			self.send_header("Content-type", "image/jpg")
+			self.end_headers()
+			self.wfile.write(image)
+		except Exception as e:
+			self.send_response(404)
+			self.send_header("Content-type", "text/html")
+			self.end_headers()
+			self.wfile.write('<title>Wrong arguments</title>'.encode())
+			self.wfile.write('<body>'.encode())
+			self.wfile.write('Something got wrong, check arguments'.encode())
+			self.wfile.write(f'\n{e}</body>'.encode())
 
 	do_DELETE = do_GET
 

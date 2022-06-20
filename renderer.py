@@ -72,7 +72,7 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 			name = obj[2]
 
 	if url:
-		filename = f"{url}_{client}"
+		filename = f"{url.split('/')[-1]}_{client}"
 		if caching.is_cached(filename=filename, info=[size]):
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
 		else:
