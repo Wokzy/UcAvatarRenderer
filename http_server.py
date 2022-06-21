@@ -32,8 +32,8 @@ def parse_parameters(parameters):
 
 	parameters = dict(parameters)
 
-	if not cursor:
-		load_database()
+	#if not cursor:
+		#load_database()
 	parameters['database'] = cursor
 
 	return renderer.make_photo(**parameters)
@@ -41,18 +41,18 @@ def parse_parameters(parameters):
 
 @app.route('/uc/v2/avatar', methods=['GET'])
 def do_GET():
-	if not conn:
-		load_database()
+	#if not conn:
+		#load_database()
 
-	try:
-		image = parse_parameters(request.args)
-		resp = Response(image, status=200)
-		resp.headers['Content-type'] = 'image/png'
-		return resp
-	except Exception as e:
-		resp = Response('<title>Wrong arguments</title>\n<body>\n<p>Something got wrong, check arguments</p>\n<p>{}</p>\n</body>'.format(e), status=400)
-		resp.headers['Content-type'] = "text/html"
-		return resp
+	#try:
+	image = parse_parameters(request.args)
+	resp = Response(image, status=200)
+	resp.headers['Content-type'] = 'image/png'
+	return resp
+#	except Exception as e:
+#		resp = Response('<title>Wrong arguments</title>\n<body>\n<p>Something got wrong, check arguments</p>\n<p>{}</p>\n</body>'.format(e), status=400)
+#		resp.headers['Content-type'] = "text/html"
+#		return resp
 
 def run():
 	thread = threading.Thread(target=caching.check_expiration_thread)

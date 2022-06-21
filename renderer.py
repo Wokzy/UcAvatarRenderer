@@ -137,7 +137,7 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 
 	if user_id or chat_id:
 		if user_id:
-			database.execute('SELECT * FROM users WHERE user_id = {}'.format(user_id))
+			database.execute('SELECT * FROM users WHERE user_id = {}'.format(user_id)) # TODO 2 fields
 		elif chat_id:
 			database.execute('SELECT * FROM chat WHERE chat_id = {}'.format(chat_id))
 		obj = database.fetchone()
