@@ -7,9 +7,9 @@ import psycopg2
 import requests
 
 from io import BytesIO
-from utils import remove_sp_symbols
 from PIL import Image, ImageFont, ImageDraw
 from config import MINIMUM_BACKGROUND_BRIGHTNESS, CACHE_DIR, FONT_LOCATION
+from utils import remove_sp_symbols, replace_sp_symbols, remove_multiplying_symbols
 
 __author__ = 'Yegor Yershov'
 
@@ -97,15 +97,12 @@ def draw_name(name, width=None, height=None, background='random', main_backgroun
 	elif not height:
 		height = width
 
-	#print(name)
 	color = color_transform(background, name, theme=theme)
 	if main_background != None:
 		main_background = tuple([int(i) for i in main_background.split(',')]) #color_transform(main_background, theme=theme)
 
-	name = remove_sp_symbols(name)
-	name = name.strip()
+	name = remove_multiplying_symbols(replace_sp_symbols(name).strip())
 	name = list(filter(('').__ne__, name.split(' ')))
-	#print(name)
 	if len(name) == 1:
 		text = name[0][0]
 	else:
