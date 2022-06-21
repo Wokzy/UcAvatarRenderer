@@ -47,4 +47,4 @@ cursor.close()
 conn.close()
 '''
 
-http_server.run(handler_class=http_server.HttpGetHandler)
+http_server.run()

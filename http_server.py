@@ -1,5 +1,4 @@
 import io
-import urllib
 import caching
 import renderer
 import psycopg2
@@ -7,79 +6,63 @@ import threading
 
 from config import *
 from PIL import Image
-from http.server import HTTPServer
-from http.server import BaseHTTPRequestHandler
+from flask import Flask, jsonify, request, Response
 
 __author__ = 'Yegor Yershov'
 
-class HttpGetHandler(BaseHTTPRequestHandler):
-	favicon_loaded = False
-	database_loaded = False
+favicon_loaded = False
+cursor = False
+conn = None
 
-	def load_favicon(self): # Loading favicon image
-		img = Image.open('favicon.png')
-		img_byte_arr = io.BytesIO()
-		img.save(img_byte_arr, format='PNG')
-		self.favicon = img_byte_arr.getvalue()
-		self.favicon_loaded = True
+app = Flask(__name__)
 
-	def parse_parameters(self):
-		if 'avicon.ico' in self.path: # Check if web asking for favicon
-			return b'' #self.favicon
+def load_database():
+	conn = psycopg2.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST)
+	cursor = conn.cursor()
 
-		path = urllib.parse.unquote(self.path)
-		parameters = path.split('?')[1].split('&')
+def load_favicon(): # Loading favicon image
+	img = Image.open('favicon.png')
+	img_byte_arr = io.BytesIO()
+	img.save(img_byte_arr, format='PNG')
+	favicon_loaded = img_byte_arr.getvalue()
 
-		parameters_dict = {'database':self.cursor}
+def parse_parameters(parameters):
+	#if 'avicon.ico' in parameters: # Check if web asking for favicon
+	#	return b'' #self.favicon
 
-		for param in parameters:
-			parameter = param.split('=')
-			parameters_dict[parameter[0]] = parameter[1].replace('+', ' ')
+	parameters = dict(parameters)
 
-		return renderer.make_photo(**parameters_dict)
+	if not cursor:
+		load_database()
+	parameters['database'] = cursor
 
-	def load_database(self):
-		self.conn = psycopg2.connect(dbname=DATABASE_NAME, user=DATABASE_USER, password=DATABASE_PASSWORD, host=DATABASE_HOST)
-		self.cursor = self.conn.cursor()
-		self.database_loaded = True
+	return renderer.make_photo(**parameters)
 
-	def do_GET(self):
-		#if not self.favicon_loaded:
-		#	self.load_favicon()
-		if not self.database_loaded:
-			self.load_database()
 
-		try:
-			image = self.parse_parameters()
-			self.send_response(200)
-			self.send_header("Content-type", "image/png")
-			self.end_headers()
-			self.wfile.write(image)
-		
-		except Exception as e:
-			self.send_response(404)
-			self.send_header("Content-type", "text/html")
-			self.end_headers()
-			self.wfile.write('<title>Wrong arguments</title>'.encode())
-			self.wfile.write('<body>'.encode())
-			self.wfile.write('Something got wrong, check arguments'.encode())
-			self.wfile.write(f'\n{e}</body>'.encode())
-		
+@app.route('/uc/v2/avatar', methods=['GET'])
+def do_GET():
+	if not conn:
+		load_database()
 
-	do_DELETE = do_GET
+	try:
+		image = parse_parameters(request.args)
+		resp = Response(image, status=200)
+		resp.headers['Content-type'] = 'image/png'
+		return resp
+	except Exception as e:
+		resp = Response('<title>Wrong arguments</title>\n<body>\n<p>Something got wrong, check arguments</p>\n<p>{}</p>\n</body>'.format(e), status=400)
+		resp.headers['Content-type'] = "text/html"
+		return resp
 
-def run(handler_class, server_class=HTTPServer):
+def run():
 	thread = threading.Thread(target=caching.check_expiration_thread)
 	thread.start()
 
-	server_address = ('', SERVICE_PORT)
-	httpd = server_class(server_address, handler_class)
 	try:
-		httpd.serve_forever()
+		app.run(host=SERVICE_HOST, port=SERVICE_PORT)
 	except KeyboardInterrupt:
-		handler_class.cursor.close()
-		handler_class.conn.close()
-		httpd.server_close()
+		cursor.close()
+		conn.close()
 
 
 #run(handler_class=HttpGetHandler)

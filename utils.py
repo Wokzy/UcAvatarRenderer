@@ -4,7 +4,7 @@ SPECIAL_SYMBOLS_LIST = '\'!@#$%^&*-+?_=,<>/".'
 def remove_sp_symbols(string):
 	res = []
 	for char in string:
-		if char.isalnum() and char not in SPECIAL_SYMBOLS_LIST:
+		if (char.isalnum() or char == ' ') and char not in SPECIAL_SYMBOLS_LIST:
 			res.append(char)
 
 	return ''.join(res)

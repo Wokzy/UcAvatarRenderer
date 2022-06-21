@@ -101,7 +101,8 @@ def draw_name(name, width=None, height=None, background='random', main_backgroun
 	if main_background != None:
 		main_background = tuple([int(i) for i in main_background.split(',')]) #color_transform(main_background, theme=theme)
 
-	name = remove_multiplying_symbols(replace_sp_symbols(name).strip())
+	name = remove_sp_symbols(name)
+	name = remove_multiplying_symbols(name.strip())
 	name = list(filter(('').__ne__, name.split(' ')))
 	if len(name) == 1:
 		text = name[0][0]
