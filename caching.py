@@ -40,7 +40,7 @@ def check_expiration_thread():
 
 	while True:
 		for file in os.listdir(CACHE_DIR):
-			if file.split('.')[1] == 'bin':
-				check_expiration(file.split('.')[0])
+			if file.split('.')[-1] == 'bin':
+				check_expiration(file.replace('.bin', ''))
 
 		time.sleep(3)

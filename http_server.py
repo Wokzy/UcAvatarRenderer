@@ -1,4 +1,5 @@
 import io
+import urllib
 import caching
 import renderer
 import psycopg2
@@ -23,10 +24,11 @@ class HttpGetHandler(BaseHTTPRequestHandler):
 		self.favicon_loaded = True
 
 	def parse_parameters(self):
-		parameters = self.path[2::].split('&')
+		if 'avicon.ico' in self.path: # Check if web asking for favicon
+			return b'' #self.favicon
 
-		if 'avicon.ico' in parameters: # Check if web asking for favicon
-			return self.favicon
+		path = urllib.parse.unquote(self.path)
+		parameters = path.split('?')[1].split('&')
 
 		parameters_dict = {'database':self.cursor}
 
@@ -42,17 +44,18 @@ class HttpGetHandler(BaseHTTPRequestHandler):
 		self.database_loaded = True
 
 	def do_GET(self):
-		if not self.favicon_loaded:
-			self.load_favicon()
+		#if not self.favicon_loaded:
+		#	self.load_favicon()
 		if not self.database_loaded:
 			self.load_database()
 
 		try:
 			image = self.parse_parameters()
 			self.send_response(200)
-			self.send_header("Content-type", "image/jpg")
+			self.send_header("Content-type", "image/png")
 			self.end_headers()
 			self.wfile.write(image)
+		
 		except Exception as e:
 			self.send_response(404)
 			self.send_header("Content-type", "text/html")
@@ -61,6 +64,7 @@ class HttpGetHandler(BaseHTTPRequestHandler):
 			self.wfile.write('<body>'.encode())
 			self.wfile.write('Something got wrong, check arguments'.encode())
 			self.wfile.write(f'\n{e}</body>'.encode())
+		
 
 	do_DELETE = do_GET
 
@@ -68,7 +72,7 @@ def run(handler_class, server_class=HTTPServer):
 	thread = threading.Thread(target=caching.check_expiration_thread)
 	thread.start()
 
-	server_address = ('', 8000)
+	server_address = ('', SERVICE_PORT)
 	httpd = server_class(server_address, handler_class)
 	try:
 		httpd.serve_forever()
