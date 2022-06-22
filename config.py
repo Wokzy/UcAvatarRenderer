@@ -13,3 +13,6 @@ CACHE_DIR = 'cached_photo'
 CACHE_EXPIRATION_TIME = 3600*5 # In seconds (5 hour)
 
 FONT_LOCATION = '' #'/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/Roboto-Medium.ttf'
+PUSH_IMAGE_TYPE = 'local' # local/url
+PUSH_IMAGE_LOCATION = './push_image.png'
+PUSH_IMAGE_DIVISOR = 3

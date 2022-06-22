@@ -1,15 +1,17 @@
 import os
 import math
 import random
+import base64
 import hashlib
 import caching
 import psycopg2
 import requests
+import cairosvg
 
 from io import BytesIO
-from PIL import Image, ImageFont, ImageDraw
-from config import MINIMUM_BACKGROUND_BRIGHTNESS, CACHE_DIR, FONT_LOCATION
+from PIL import Image, ImageFont, ImageDraw, UnidentifiedImageError, ImageOps
 from utils import remove_sp_symbols, replace_sp_symbols, remove_multiplying_symbols
+from config import MINIMUM_BACKGROUND_BRIGHTNESS, CACHE_DIR, FONT_LOCATION, PUSH_IMAGE_TYPE, PUSH_IMAGE_LOCATION, PUSH_IMAGE_DIVISOR
 
 __author__ = 'Yegor Yershov'
 
@@ -114,7 +116,7 @@ def draw_name(name, width=None, height=None, background='random', main_backgroun
 
 	img = Image.new("RGBA", (width, height), color=main_background)
 	draw = ImageDraw.Draw(img)
-	draw.ellipse((0, 0, width, height), fill = color, outline = color)
+	draw.ellipse((0, 0, width, height), fill = color)
 	fnt = ImageFont.truetype(FONT_LOCATION, max(12, min(width, height)//2))
 	w, h = draw.textsize(text, font=fnt)
 	draw.text(((width-w)/2,(height-h)/2), text, fill='white', font=fnt)
@@ -127,6 +129,46 @@ def make_request(url, is_default=False): # is_default means if we are trying to 
 
 	assert response.status_code == 200, error_string
 	return response.content
+
+def make_circle_avatar(img, size):
+	mask = Image.new('L', size, 0)
+	draw = ImageDraw.Draw(mask)
+	draw.ellipse((0, 0) + size, fill = 255)
+
+	output = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
+	print(output.__class__)
+	output.putalpha(mask)
+
+	return output #Image.alpha_composite(img, output)
+
+def load_image_from_url(url):
+	if 'data:image' in url and 'base64' in url:
+		img = Image.open(BytesIO(base64.b64decode(url.split(',')[-1].replace(' ', '+'))))
+	else:
+		content = make_request(url)
+		try:
+			img = Image.open(BytesIO(content))
+		except UnidentifiedImageError:
+			out = BytesIO()
+			cairosvg.svg2png(url=url, write_to=out)
+			img = Image.open(out)
+
+	return img
+
+def add_push_part(img, size):
+	rsize = (size[0] // PUSH_IMAGE_DIVISOR, size[1] // PUSH_IMAGE_DIVISOR)
+	offset = (size[0] - rsize[0], size[1] - rsize[1])
+
+	composite_img = Image.new("RGBA", size)
+
+	if PUSH_IMAGE_TYPE == 'local':
+		push = Image.open(PUSH_IMAGE_LOCATION).resize(rsize, Image.ANTIALIAS)
+	else:
+		push = load_image_from_url(PUSH_IMAGE_LOCATION).resize(rsize, Image.ANTIALIAS)
+
+	composite_img.paste(push, offset)
+
+	return Image.alpha_composite(img, composite_img)
 
 def make_photo(database, size=64, background='random', name=None, url=None, chat_id=None, user_id=None, 
 													client='web', push=False, main_background=None, theme='light'):
@@ -156,9 +198,10 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 		if caching.is_cached(filename=filename, info=info):
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
 		else:
-			content = make_request(url)
-			img = Image.open(BytesIO(content))
-			img.thumbnail(size, Image.ANTIALIAS)
+			img = load_image_from_url(url).resize(size, Image.ANTIALIAS)
+			img = make_circle_avatar(img, size)
+			if push:
+				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
 	else:
 		filename = f"{name}_{client}"
@@ -169,6 +212,8 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
 		else:
 			img = draw_name(name, width=size[0], height=size[1], background=background, main_background=main_background, theme=theme)
+			if push:
+				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
 
 	#img.save('res.png', 'PNG')

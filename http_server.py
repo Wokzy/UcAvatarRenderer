@@ -46,7 +46,7 @@ def parse_parameters(parameters):
 
 
 @app.route('/uc/v2/avatar', methods=['GET'])
-def do_GET():
+def do_GET(): # TODO HTTP ETAG
 	global cursor, conn, database_usage, debug_mode
 	if database_usage and not conn:
 		load_database()
@@ -75,7 +75,7 @@ def run(db_usage = True, debug=False):
 	thread.start()
 
 	try:
-		app.run(host=SERVICE_HOST, port=SERVICE_PORT)
+		app.run(host=SERVICE_HOST, port=SERVICE_PORT, debug=debug)
 	except KeyboardInterrupt:
 		cursor.close()
 		conn.close()

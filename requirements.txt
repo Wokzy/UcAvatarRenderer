@@ -2,3 +2,4 @@ flask
 Pillow
 psycopg2
 requests
+cairosvg
