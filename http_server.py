@@ -40,7 +40,6 @@ def parse_parameters(parameters):
 	if database_usage and not cursor:
 		load_database()
 
-	print(cursor)
 	parameters['database'] = cursor
 
 	return renderer.make_photo(**parameters)

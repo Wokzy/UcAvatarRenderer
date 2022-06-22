@@ -4,3 +4,9 @@ __pycache__
 *.png
 *.jpeg
 config.py
+dist
+build
+*.spec
+*.tar
+*.tar.gz
+*.zip

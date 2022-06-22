@@ -25,8 +25,10 @@ if "--help" in args or "-h" in args:
 	see_help()
 	exit()
 elif "--no-database" in args:
+	print('Running without database')
 	database_usage = False
 if "--debug" in args:
+	print('Running debug mode')
 	debug = True
 
 '''
