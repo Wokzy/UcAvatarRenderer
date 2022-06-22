@@ -99,7 +99,8 @@ def draw_name(name, width=None, height=None, background='random', main_backgroun
 
 	color = color_transform(background, name, theme=theme)
 	if main_background != None:
-		main_background = tuple([int(i) for i in main_background.split(',')]) #color_transform(main_background, theme=theme)
+		if ',' in main_background:
+			main_background = tuple([int(i) for i in main_background.split(',')])
 
 	name = remove_sp_symbols(name)
 	name = remove_multiplying_symbols(name.strip())
@@ -137,18 +138,15 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 
 	if user_id or chat_id:
 		if user_id:
-			database.execute('SELECT * FROM users WHERE user_id = {}'.format(user_id)) # TODO 2 fields
+			database.execute('SELECT nickname, avatar_url FROM users WHERE user_id = {}'.format(user_id))
 		elif chat_id:
-			database.execute('SELECT * FROM chat WHERE chat_id = {}'.format(chat_id))
+			database.execute('SELECT name, avatar_url FROM chat WHERE chat_id = {}'.format(chat_id))
 		obj = database.fetchone()
 
 		if not url:
-			if chat_id:
-				url = obj[4]
-			else:
-				url = obj[6]
+			url = obj[1]
 		if not name:
-			name = obj[2]
+			name = obj[0]
 
 	if url:
 		filename = f"{url.split('/')[-1]}_{client}"

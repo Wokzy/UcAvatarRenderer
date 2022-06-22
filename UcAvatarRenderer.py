@@ -1,26 +1,35 @@
-#import sys
+import sys
 import http_server
 #import renderer
 #from config import *
 
 __author__ = 'Yegor Yershov'
 
-'''
 def see_help():
 	string = \
 	f'Usage: \n\t{sys.argv[0]} [OPTIONS]\n\n' + \
-	' -u  --user       |  user id (required)\n' + \
-	' -f  --file_name  |  output file name (default user id)\n'# + \
+	'-h, --help         | see this message\n' + \
+	'    --no-database  | Do not connect to database (some parameters wont be avalible)\n' + \
+	'    --debug        | Turn on debug mode, all occuring errors will be shown in console\n'
+	#' -u  --user       |  user id (required)\n' + \
+	#' -f  --file_name  |  output file name (default user id)\n'# + \
 	#'\n'
 
 	print(string)
 
 args = sys.argv[1::]
+database_usage = True
+debug = False
 
 if "--help" in args or "-h" in args:
 	see_help()
 	exit()
+elif "--no-database" in args:
+	database_usage = False
+if "--debug" in args:
+	debug = True
 
+'''
 #arguments = {'-u':'user_id', '--user':'user_id', '-f':'file_name', '--file_name':'file_name'}
 #conf = {}
 
@@ -47,4 +56,4 @@ cursor.close()
 conn.close()
 '''
 
-http_server.run()
+http_server.run(database_usage, debug)
