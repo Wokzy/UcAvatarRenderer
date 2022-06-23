@@ -10,7 +10,7 @@ def see_help():
 	f'Usage: \n\t{sys.argv[0]} [OPTIONS]\n\n' + \
 	'-h, --help         | see this message\n' + \
 	'    --no-database  | Do not connect to database (some parameters wont be avalible)\n' + \
-	'    --debug        | Turn on debug mode, all occuring errors will be shown in console\n'
+	'    --debug        | Turn on debug mode, all occuring errors will be shown in console\n' # TODO URL
 	#' -u  --user       |  user id (required)\n' + \
 	#' -f  --file_name  |  output file name (default user id)\n'# + \
 	#'\n'

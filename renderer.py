@@ -200,7 +200,7 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 		else:
 			img = load_image_from_url(url).resize(size, Image.ANTIALIAS)
 			img = make_circle_avatar(img, size)
-			if push:
+			if push == 'True':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
 	else:
@@ -212,7 +212,7 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
 		else:
 			img = draw_name(name, width=size[0], height=size[1], background=background, main_background=main_background, theme=theme)
-			if push:
+			if push == 'True':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
 

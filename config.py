@@ -1,18 +1,24 @@
 # Config file for renderer
 
-SERVICE_HOST = ''
-SERVICE_PORT = 8000
+import json
 
-DATABASE_HOST = ''
-DATABASE_NAME = ''
-DATABASE_USER = ''
-DATABASE_PASSWORD = ''
+file = open('config.json')
+cfg = json.load(file)
+file.close()
 
-MINIMUM_BACKGROUND_BRIGHTNESS = 160 # Minimal brightness to switch text color from black into while
-CACHE_DIR = 'cached_photo'
-CACHE_EXPIRATION_TIME = 3600*5 # In seconds (5 hour)
+SERVICE_HOST = cfg['SERVICE_HOST']
+SERVICE_PORT = cfg['SERVICE_PORT']
 
-FONT_LOCATION = '' #'/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/Roboto-Medium.ttf'
-PUSH_IMAGE_TYPE = 'local' # local/url
-PUSH_IMAGE_LOCATION = './push_image.png'
-PUSH_IMAGE_DIVISOR = 3
+DATABASE_HOST = cfg['DATABASE_HOST']
+DATABASE_NAME = cfg['DATABASE_NAME']
+DATABASE_USER = cfg['DATABASE_USER']
+DATABASE_PASSWORD = cfg['DATABASE_PASSWORD']
+
+MINIMUM_BACKGROUND_BRIGHTNESS = cfg['MINIMUM_BACKGROUND_BRIGHTNESS'] # Minimal brightness to switch text color from black into while
+CACHE_DIR = cfg['CACHE_DIR']
+CACHE_EXPIRATION_TIME = cfg['CACHE_EXPIRATION_TIME'] # In seconds
+
+FONT_LOCATION = cfg['FONT_LOCATION']
+PUSH_IMAGE_TYPE = cfg['PUSH_IMAGE_TYPE'] # local/url
+PUSH_IMAGE_LOCATION = cfg['PUSH_IMAGE_LOCATION']
+PUSH_IMAGE_DIVISOR = cfg['PUSH_IMAGE_SIZE_DIVISOR']
