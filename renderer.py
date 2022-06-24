@@ -136,7 +136,6 @@ def make_circle_avatar(img, size):
 	draw.ellipse((0, 0) + size, fill = 255)
 
 	output = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
-	print(output.__class__)
 	output.putalpha(mask)
 
 	return output #Image.alpha_composite(img, output)
@@ -202,7 +201,7 @@ def make_photo(database, size="64", background='random', name=None, url=None, ch
 		else:
 			img = load_image_from_url(url).resize(size, Image.ANTIALIAS)
 			img = make_circle_avatar(img, size)
-			if push == 'True':
+			if push and str(push).lower() == 'true':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
 	else:
@@ -216,7 +215,7 @@ def make_photo(database, size="64", background='random', name=None, url=None, ch
 				return 304
 		else:
 			img = draw_name(name, width=size[0], height=size[1], background=background, main_background=main_background, theme=theme)
-			if push.lower() == 'true':
+			if push and str(push).lower() == 'true':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
 
