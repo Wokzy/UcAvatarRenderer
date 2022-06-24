@@ -1,7 +1,9 @@
 import os
 import time
 import pickle
+import hashlib
 
+from io import BytesIO
 from datetime import datetime
 from config import CACHE_DIR, CACHE_EXPIRATION_TIME
 
@@ -44,3 +46,13 @@ def check_expiration_thread():
 				check_expiration(file.replace('.bin', ''))
 
 		time.sleep(3)
+
+def generate_entag(img):
+	out = BytesIO()
+	img.save(out, 'PNG')
+	etag = hashlib.sha256(out.getvalue()).hexdigest()
+
+	return etag
+
+def check_etag(img, etag):
+	return etag == generate_entag(img)

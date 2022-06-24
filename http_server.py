@@ -30,7 +30,7 @@ def load_favicon(): # Loading favicon image
 	img.save(img_byte_arr, format='PNG')
 	favicon_loaded = img_byte_arr.getvalue()
 
-def parse_parameters(parameters):
+def parse_parameters(parameters, etag=None):
 	global cursor, conn, database_usage
 	#if 'avicon.ico' in parameters: # Check if web asking for favicon
 	#	return b'' #self.favicon
@@ -41,6 +41,7 @@ def parse_parameters(parameters):
 		load_database()
 
 	parameters['database'] = cursor
+	parameters['etag'] = etag
 
 	return renderer.make_photo(**parameters)
 
@@ -51,16 +52,39 @@ def do_GET(): # TODO HTTP ETAG
 	if database_usage and not conn:
 		load_database()
 
+
 	if debug_mode:
-		image = parse_parameters(request.args)
-		resp = Response(image, status=200)
-		resp.headers['Content-type'] = 'image/png'
+		if 'ETag' in request.headers:
+			out = parse_parameters(request.args, request.headers['ETag'])
+		else:
+			out = parse_parameters(request.args)
+
+		if out.__class__.__name__ == 'int':
+			resp = Response(status=304)
+		else:
+			image = out[0]
+			etag = out[1]
+			resp = Response(image, status=200)
+			resp.headers['Content-type'] = 'image/png'
+			resp.headers['ETag'] = etag
+
 		return resp
 
 	try:
-		image = parse_parameters(request.args)
-		resp = Response(image, status=200)
-		resp.headers['Content-type'] = 'image/png'
+		if 'ETag' in request.headers:
+			out = parse_parameters(request.args, request.headers['ETag'])
+		else:
+			out = parse_parameters(request.args)
+
+		if out.__class__.__name__ == 'int':
+			resp = Response(status=304)
+		else:
+			image = out[0]
+			etag = out[1]
+			resp = Response(image, status=200)
+			resp.headers['Content-type'] = 'image/png'
+			resp.headers['ETag'] = etag
+
 		return resp
 	except Exception as e:
 		resp = Response('<title>Wrong arguments</title>\n<body>\n<p>Something got wrong, check arguments</p>\n<p>{}</p>\n</body>'.format(e), status=400)

@@ -1,5 +1,5 @@
 flask
 Pillow
-psycopg2
 requests
 cairosvg
+psycopg2-binary

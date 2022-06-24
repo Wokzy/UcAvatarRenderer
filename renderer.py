@@ -170,8 +170,8 @@ def add_push_part(img, size):
 
 	return Image.alpha_composite(img, composite_img)
 
-def make_photo(database, size=64, background='random', name=None, url=None, chat_id=None, user_id=None, 
-													client='web', push=False, main_background=None, theme='light'):
+def make_photo(database, size="64", background='random', name=None, url=None, chat_id=None, user_id=None,
+												client='web', push=False, main_background=None, theme='light', etag = None):
 	size = size.split('x')
 	if len(size) == 1:
 		size = (max(16, min(512, int(size[0]))), max(16, min(512, int(size[0]))))
@@ -197,6 +197,8 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 
 		if caching.is_cached(filename=filename, info=info):
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
+			if caching.check_etag(img, etag):
+				return 304
 		else:
 			img = load_image_from_url(url).resize(size, Image.ANTIALIAS)
 			img = make_circle_avatar(img, size)
@@ -210,9 +212,11 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 
 		if caching.is_cached(filename=filename, info=info):
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
+			if caching.check_etag(img, etag):
+				return 304
 		else:
 			img = draw_name(name, width=size[0], height=size[1], background=background, main_background=main_background, theme=theme)
-			if push == 'True':
+			if push.lower() == 'true':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
 
@@ -221,4 +225,4 @@ def make_photo(database, size=64, background='random', name=None, url=None, chat
 	img_byte_arr = BytesIO()
 	img.save(img_byte_arr, format='PNG')
 
-	return img_byte_arr.getvalue()
+	return img_byte_arr.getvalue(), caching.generate_entag(img)
