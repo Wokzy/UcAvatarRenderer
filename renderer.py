@@ -6,14 +6,16 @@ import hashlib
 import caching
 import psycopg2
 import requests
-import cairosvg
 
 from io import BytesIO
 from PIL import Image, ImageFont, ImageDraw, UnidentifiedImageError, ImageOps
 from utils import remove_sp_symbols, replace_sp_symbols, remove_multiplying_symbols
-from config import MINIMUM_BACKGROUND_BRIGHTNESS, CACHE_DIR, FONT_LOCATION, PUSH_IMAGE_TYPE, PUSH_IMAGE_LOCATION, PUSH_IMAGE_DIVISOR
+from config import MINIMUM_BACKGROUND_BRIGHTNESS, CACHE_DIR, FONT_LOCATION, PUSH_IMAGE_TYPE, PUSH_IMAGE_LOCATION, PUSH_IMAGE_DIVISOR, SVG_REQUIRED_PACKAGE
 
 __author__ = 'Yegor Yershov'
+
+global svg_lib_usage
+svg_lib_usage = None
 
 class ColorGenerator:
 	def __init__(self):
@@ -141,6 +143,8 @@ def make_circle_avatar(img, size):
 	return output #Image.alpha_composite(img, output)
 
 def load_image_from_url(url):
+	global svg_lib_usage
+
 	if 'data:image' in url and 'base64' in url:
 		img = Image.open(BytesIO(base64.b64decode(url.split(',')[-1].replace(' ', '+'))))
 	else:
@@ -148,9 +152,16 @@ def load_image_from_url(url):
 		try:
 			img = Image.open(BytesIO(content))
 		except UnidentifiedImageError:
+			'''
 			out = BytesIO()
 			cairosvg.svg2png(url=url, write_to=out)
 			img = Image.open(out)
+			'''
+			if not svg_lib_usage:
+				return "The format of image you want to load is svg, which was disabled manually."
+			with svg_lib_usage.Image(blob=content, format="svg") as image:
+				png_image = image.make_blob("png")
+			img = Image.open(BytesIO(png_image))
 
 	return img
 
@@ -169,8 +180,13 @@ def add_push_part(img, size):
 
 	return Image.alpha_composite(img, composite_img)
 
-def make_photo(database, size="64", background='random', name=None, url=None, chat_id=None, user_id=None,
+def make_photo(database, size="64", background='random', name=None, url=None, chat_id=None, user_id=None, svg = True,
 												client='web', push=False, main_background=None, theme='light', etag = None):
+	global svg_lib_usage
+	if svg:
+		import wand.image
+		svg_lib_usage = wand.image
+
 	size = size.split('x')
 	if len(size) == 1:
 		size = (max(16, min(512, int(size[0]))), max(16, min(512, int(size[0]))))
@@ -197,10 +213,13 @@ def make_photo(database, size="64", background='random', name=None, url=None, ch
 		if caching.is_cached(filename=filename, info=info):
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
 			if caching.check_etag(img, etag):
-				return 304
+				return 304, 'ETag matches'
 		else:
-			img = load_image_from_url(url).resize(size, Image.ANTIALIAS)
-			img = make_circle_avatar(img, size)
+			img = load_image_from_url(url)
+			if img != None and img.__class__.__name__ != 'str':
+				img = make_circle_avatar(img.resize(size, Image.ANTIALIAS), size)
+			else:
+				return 400, img
 			if push and str(push).lower() == 'true':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
@@ -212,7 +231,7 @@ def make_photo(database, size="64", background='random', name=None, url=None, ch
 		if caching.is_cached(filename=filename, info=info):
 			img = Image.open(f'{CACHE_DIR}/{filename}.png')
 			if caching.check_etag(img, etag):
-				return 304
+				return 304, 'ETag matches'
 		else:
 			img = draw_name(name, width=size[0], height=size[1], background=background, main_background=main_background, theme=theme)
 			if push and str(push).lower() == 'true':

@@ -10,12 +10,13 @@ from flask import Flask, jsonify, request, Response
 
 __author__ = 'Yegor Yershov'
 
-global cursor, conn, database_usage, debug_mode
+global cursor, conn, database_usage, debug_mode, svg_lib_usage
 favicon_loaded = False
 cursor = False
 conn = None
 database_usage = True
 debug_mode = False
+svg_lib_usage = True
 
 app = Flask(__name__)
 
@@ -31,7 +32,7 @@ def load_favicon(): # Loading favicon image
 	favicon_loaded = img_byte_arr.getvalue()
 
 def parse_parameters(parameters, etag=None):
-	global cursor, conn, database_usage
+	global cursor, conn, database_usage, svg_lib_usage
 	#if 'avicon.ico' in parameters: # Check if web asking for favicon
 	#	return b'' #self.favicon
 
@@ -42,59 +43,56 @@ def parse_parameters(parameters, etag=None):
 
 	parameters['database'] = cursor
 	parameters['etag'] = etag
+	parameters['svg'] = svg_lib_usage
 
 	return renderer.make_photo(**parameters)
 
+def make_error_response(error, status=400):
+	resp = Response(error, status=status)
+	resp.headers['Content-type'] = "text/html"
+
+	return resp
+
+def make_response(request):
+	global svg_lib_usage
+	if 'ETag' in request.headers:
+			out = parse_parameters(request.args, request.headers['ETag'])
+	else:
+		out = parse_parameters(request.args)
+
+	if out.__class__.__name__ == 'int':
+		resp = Response(status=out)
+	elif out.__class__.__name__ == 'tuple' and out[0].__class__.__name__ == 'int':
+		resp = Response(f'<title>{out[0]}</title>\n<body>\n<p>{out[1]}</p>\n</body>', status=out[0])
+		resp.headers['Content-type'] = "text/html"
+	else:
+		image = out[0]
+		etag = out[1]
+		resp = Response(image, status=200)
+		resp.headers['Content-type'] = 'image/png'
+		resp.headers['ETag'] = etag
+
+	return resp
 
 @app.route('/uc/v2/avatar', methods=['GET'])
 def do_GET(): # TODO HTTP ETAG
-	global cursor, conn, database_usage, debug_mode
+	global cursor, conn, database_usage, debug_mode, svg_lib_usage
 	if database_usage and not conn:
 		load_database()
 
-
 	if debug_mode:
-		if 'ETag' in request.headers:
-			out = parse_parameters(request.args, request.headers['ETag'])
-		else:
-			out = parse_parameters(request.args)
-
-		if out.__class__.__name__ == 'int':
-			resp = Response(status=304)
-		else:
-			image = out[0]
-			etag = out[1]
-			resp = Response(image, status=200)
-			resp.headers['Content-type'] = 'image/png'
-			resp.headers['ETag'] = etag
-
-		return resp
+		return make_response(request)
 
 	try:
-		if 'ETag' in request.headers:
-			out = parse_parameters(request.args, request.headers['ETag'])
-		else:
-			out = parse_parameters(request.args)
-
-		if out.__class__.__name__ == 'int':
-			resp = Response(status=304)
-		else:
-			image = out[0]
-			etag = out[1]
-			resp = Response(image, status=200)
-			resp.headers['Content-type'] = 'image/png'
-			resp.headers['ETag'] = etag
-
-		return resp
+		return make_response(request)
 	except Exception as e:
-		resp = Response('<title>Wrong arguments</title>\n<body>\n<p>Something got wrong, check arguments</p>\n<p>{}</p>\n</body>'.format(e), status=400)
-		resp.headers['Content-type'] = "text/html"
-		return resp
+		return make_error_response('<title>Wrong arguments</title>\n<body>\n<p>Something got wrong, check arguments</p>\n<p>{}</p>\n</body>'.format(e))
 
-def run(db_usage = True, debug=False):
-	global database_usage, debug_mode
+def run(db_usage = True, debug=False, svg=True):
+	global database_usage, debug_mode, svg_lib_usage
 	database_usage = db_usage
 	debug_mode = debug
+	svg_lib_usage = svg
 	thread = threading.Thread(target=caching.check_expiration_thread)
 	thread.start()
 

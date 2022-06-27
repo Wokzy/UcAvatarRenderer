@@ -1,5 +1,5 @@
+wand
 flask
 Pillow
 requests
-cairosvg
 psycopg2-binary

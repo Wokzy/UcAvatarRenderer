@@ -1,16 +1,17 @@
 import sys
 import http_server
 #import renderer
-#from config import *
+from config import SVG_REQUIRED_PACKAGE
 
 __author__ = 'Yegor Yershov'
 
-def see_help():
+def see_help(): # libmagickwand-dev (SVG_REQUIRED_PACKAGE)
 	string = \
 	f'Usage: \n\t{sys.argv[0]} [OPTIONS]\n\n' + \
 	'-h, --help         | see this message\n' + \
 	'    --no-database  | Do not connect to database (some parameters wont be avalible)\n' + \
 	'    --debug        | Turn on debug mode, all occuring errors will be shown in console\n' + \
+	'    --no-svg       | Disable svg support\n' + \
 	'\n\tHTTP API OPTIONS:\n' + \
 	' name*             | Generate avatar from name\n' + \
 	' chat_id/user_id*  | Generate or get avatar for user/chat from its name or url\n' + \
@@ -32,6 +33,7 @@ def see_help():
 args = sys.argv[1::]
 database_usage = True
 debug = False
+svg = True
 
 if "--help" in args or "-h" in args:
 	see_help()
@@ -42,6 +44,8 @@ elif "--no-database" in args:
 if "--debug" in args:
 	print('Running debug mode')
 	debug = True
+if '--no-svg' in args:
+	svg = False
 
 '''
 #arguments = {'-u':'user_id', '--user':'user_id', '-f':'file_name', '--file_name':'file_name'}
@@ -69,5 +73,9 @@ print(user)
 cursor.close()
 conn.close()
 '''
-
-http_server.run(database_usage, debug)
+if svg:
+	try:
+		import wand.image
+	except:
+		raise ImportError(f'Script is running with enabled svg usage, but required package {SVG_REQUIRED_PACKAGE} is not installed')
+http_server.run(database_usage, debug, svg)
