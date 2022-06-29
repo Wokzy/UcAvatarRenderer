@@ -1,5 +1,7 @@
 wand
 flask
 Pillow
+grpcio
 requests
+grpcio-tools
 psycopg2-binary

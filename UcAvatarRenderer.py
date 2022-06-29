@@ -9,7 +9,6 @@ def see_help(): # libmagickwand-dev (SVG_REQUIRED_PACKAGE)
 	string = \
 	f'Usage: \n\t{sys.argv[0]} [OPTIONS]\n\n' + \
 	'-h, --help         | see this message\n' + \
-	'    --no-database  | Do not connect to database (some parameters wont be avalible)\n' + \
 	'    --debug        | Turn on debug mode, all occuring errors will be shown in console\n' + \
 	'    --no-svg       | Disable svg support\n' + \
 	'\n\tHTTP API OPTIONS:\n' + \
@@ -38,9 +37,9 @@ svg = True
 if "--help" in args or "-h" in args:
 	see_help()
 	sys.exit()
-elif "--no-database" in args:
-	print('Running without database')
-	database_usage = False
+#elif "--no-database" in args: #'    --no-database  | Do not connect to database (some parameters wont be avalible)\n'
+#	print('Running without database')
+#	database_usage = False
 if "--debug" in args:
 	print('Running debug mode')
 	debug = True

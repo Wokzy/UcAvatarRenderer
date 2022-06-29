@@ -1,11 +1,18 @@
 import os
 import math
+import grpc
 import random
 import base64
 import hashlib
 import caching
 import psycopg2
 import requests
+
+import group_pb2
+import group_pb2_grpc
+import user_data_store_pb2
+import uc_types_pb2 as uc_types
+import user_data_store_pb2_grpc as user_data
 
 from io import BytesIO
 from PIL import Image, ImageFont, ImageDraw, UnidentifiedImageError, ImageOps
@@ -111,6 +118,8 @@ def draw_name(name, width=None, height=None, background='random', main_backgroun
 	name = list(filter(('').__ne__, name.split(' ')))
 	if len(name) == 1:
 		text = name[0][0]
+		if len(name[0]) > 1:
+			text += name[0][1]
 	else:
 		text = name[0][0] + name[1][0]
 
@@ -180,7 +189,7 @@ def add_push_part(img, size):
 
 	return Image.alpha_composite(img, composite_img)
 
-def make_photo(database, size="64", background='random', name=None, url=None, chat_id=None, user_id=None, svg = True,
+def make_photo(user_channel, chat_channel, size="64", background='random', name=None, url=None, chat_id=None, user_id=None, svg = True,
 												client='web', push=False, main_background=None, theme='light', etag = None):
 	global svg_lib_usage
 	if svg:
@@ -195,15 +204,28 @@ def make_photo(database, size="64", background='random', name=None, url=None, ch
 
 	if user_id or chat_id:
 		if user_id:
-			database.execute('SELECT nickname, avatar_url FROM users WHERE user_id = {}'.format(user_id))
+			info = user_data_store_pb2.GetUserInfoRequest(user_id=int(user_id))
+			stupgr = user_data.UserDataStoreServiceStub(user_channel)
+			res = stupgr.get_user_info(info)
+			if not name:
+				try:
+					name = res.info.nickname
+				except:
+					pass
 		elif chat_id:
-			database.execute('SELECT name, avatar_url FROM chat WHERE chat_id = {}'.format(chat_id))
-		obj = database.fetchone()
-
+			info = uc_types.GroupChatInfoRequest(group_id=int(chat_id), with_members=False)
+			stupgr = group_pb2_grpc.GroupChatServiceStub(chat_channel)
+			res = stupgr.get_info(info)
+			if not name:
+				try:
+					name = res.info.name
+				except:
+					pass
 		if not url:
-			url = obj[1]
-		if not name:
-			name = obj[0]
+			try:
+				url = res.info.avatar_url
+			except:
+				pass
 
 	if url:
 		filename = f"{url.split('/')[-1]}_{client}"
@@ -223,7 +245,7 @@ def make_photo(database, size="64", background='random', name=None, url=None, ch
 			if push and str(push).lower() == 'true':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
-	else:
+	elif name:
 		filename = f"{name}_{client}"
 		filename = hashlib.shake_128(filename.encode('utf-8')).hexdigest(length=12)
 		info = [size, background, main_background, theme, push]
@@ -237,6 +259,8 @@ def make_photo(database, size="64", background='random', name=None, url=None, ch
 			if push and str(push).lower() == 'true':
 				img = add_push_part(img, size)
 			caching.cache(img, filename=filename, info=info)
+	else:
+		return 400, 'No name and avatar url, smth got wrong'
 
 	#img.save('res.png', 'PNG')
 

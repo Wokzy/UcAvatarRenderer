@@ -1,4 +1,6 @@
 import io
+import sys
+import grpc
 import caching
 import renderer
 import psycopg2
@@ -10,11 +12,8 @@ from flask import Flask, jsonify, request, Response
 
 __author__ = 'Yegor Yershov'
 
-global cursor, conn, database_usage, debug_mode, svg_lib_usage
+global debug_mode, svg_lib_usage
 favicon_loaded = False
-cursor = False
-conn = None
-database_usage = True
 debug_mode = False
 svg_lib_usage = True
 
@@ -38,10 +37,8 @@ def parse_parameters(parameters, etag=None):
 
 	parameters = dict(parameters)
 
-	if database_usage and not cursor:
-		load_database()
-
-	parameters['database'] = cursor
+	parameters['user_channel'] = grpc.insecure_channel(f'{GRPC_HOST}:{GRPC_DATABASE_PORT}')
+	parameters['chat_channel'] = grpc.insecure_channel(f'{GRPC_HOST}:{GRPC_GROUPSERVICE_PORT}')
 	parameters['etag'] = etag
 	parameters['svg'] = svg_lib_usage
 
@@ -76,9 +73,7 @@ def make_response(request):
 
 @app.route('/uc/v2/avatar', methods=['GET'])
 def do_GET(): # TODO HTTP ETAG
-	global cursor, conn, database_usage, debug_mode, svg_lib_usage
-	if database_usage and not conn:
-		load_database()
+	global debug_mode, svg_lib_usage
 
 	if debug_mode:
 		return make_response(request)
@@ -89,8 +84,7 @@ def do_GET(): # TODO HTTP ETAG
 		return make_error_response('<title>Wrong arguments</title>\n<body>\n<p>Something got wrong, check arguments</p>\n<p>{}</p>\n</body>'.format(e))
 
 def run(db_usage = True, debug=False, svg=True):
-	global database_usage, debug_mode, svg_lib_usage
-	database_usage = db_usage
+	global debug_mode, svg_lib_usage
 	debug_mode = debug
 	svg_lib_usage = svg
 	thread = threading.Thread(target=caching.check_expiration_thread)
@@ -99,8 +93,7 @@ def run(db_usage = True, debug=False, svg=True):
 	try:
 		app.run(host=SERVICE_HOST, port=SERVICE_PORT, debug=debug)
 	except KeyboardInterrupt:
-		cursor.close()
-		conn.close()
+		sys.exit()
 
 
 #run(handler_class=HttpGetHandler)

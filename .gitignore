@@ -10,3 +10,5 @@ build
 *.tar
 *.tar.gz
 *.zip
+proto
+*.proto
